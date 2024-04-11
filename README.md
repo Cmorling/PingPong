@@ -13,7 +13,13 @@ Some configurations have to be added manually inside of each respective config.h
 ```
 ### Compilation
 Compilation has been tested on a debian 6.6.9-amd64 kernel.
-
+#### Installing kernel headers
+```bash
+sudo apt update
+sudo apt install build-essential
+sudo apt-get install linux-headers-$(uname -r)
+```
+#### Compiling program
 ```bash
 make
 sudo insmod pingpong
