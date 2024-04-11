@@ -21,8 +21,9 @@ sudo apt-get install linux-headers-$(uname -r)
 ```
 #### Compiling program
 ```bash
+cd ko
 make
-sudo insmod pingpong
+sudo insmod pingpong.ko
 ```
 ## Client
 ### Configuarion
@@ -35,6 +36,7 @@ sudo insmod pingpong
 ```
 ### Compilation
 ```bash
+cd client
 make
 sudo ./main
 ```
