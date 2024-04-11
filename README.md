@@ -26,7 +26,7 @@ make
 sudo insmod pingpong.ko
 ```
 ## Client
-### Configuarion
+### Configuration
 ```c
 #define SRC_ADDR "<IP>" // Your Ip address
 #define DST_ADDR "<IP>" // backdoors Ip address
