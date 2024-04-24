@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-Wall -g
 
 TARGET=main
-SOURCES=main.c networking.c handler.c
+SOURCES=main.c networking.c handler.c crypto.c
 OBJECTS=$(SOURCES:.c=.o)
 
 $(TARGET): $(OBJECTS)

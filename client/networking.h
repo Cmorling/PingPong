@@ -1,3 +1,5 @@
+#include "config.h"
+
 #ifndef NETWORKING_H
 #define NETWORKING_H
 
@@ -7,7 +9,7 @@
 #define DST_ADDR "172.20.10.4"
 #define INTERFACE "eth0"
 
-int listen_icmp(size_t packet_size, size_t pp_size,char *interface, void * recv_pp);
-int send_icmp(char *src_addr, char * dst_addr, void *data, int data_len);
+int listen_icmp(struct Configuration *c, size_t packet_size, size_t pp_size,void * recv_pp);
+int send_icmp(struct Configuration *c, void *data, int data_len);
 
 #endif

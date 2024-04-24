@@ -14,6 +14,7 @@
 #include <netdb.h>
 
 #include "networking.h"
+#include "config.h"
 
 unsigned short cksum(unsigned short *addr, int len)
 {
@@ -40,7 +41,7 @@ unsigned short cksum(unsigned short *addr, int len)
     
     return (answer);
 }
-int listen_icmp(size_t packet_size, size_t pp_size, char *interface, void * recv_pp) {
+int listen_icmp(struct Configuration *c, size_t packet_size, size_t pp_size, void * recv_pp) {
     struct sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);
     struct iphdr* ip_header;
@@ -51,7 +52,7 @@ int listen_icmp(size_t packet_size, size_t pp_size, char *interface, void * recv
 
     sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 
-    if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, interface, strlen(interface)) < 0) {
+    if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, c->interface, strlen(c->interface)) < 0) {
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
@@ -69,28 +70,21 @@ int listen_icmp(size_t packet_size, size_t pp_size, char *interface, void * recv
     ip_header = (struct iphdr*)recv_buffer;
     icmp_header = (struct icmphdr*)(recv_buffer + sizeof(struct iphdr));
     data = (unsigned char*)(recv_buffer + sizeof(struct iphdr) + sizeof(struct icmphdr));
-    memcpy(recv_pp, data, pp_size);
-    // printf("Received ICMP packet\n");
-    // printf("From: %s\n", inet_ntoa(addr.sin_addr));
-    // printf("Type: %d\n", icmp_header->type);
-    // printf("Code: %d\n", icmp_header->code);
-    // printf("Checksum: %d\n", icmp_header->checksum);
-    // Add more information as needed
     
-    // Clear the buffer for next packet
-    //memset(recv_buffer, 0, packet_size);
+    rc4_crypt(c, data, pp_size);
+
+    memcpy(recv_pp, data, pp_size);
     
     close(sockfd);
     
     return 0;
 }
 
-int send_icmp(char *src_addr, char * dst_addr, void *data, int data_len) {
+int send_icmp(struct Configuration *c, void *data, int data_len) {
     int sock;
     char send_buf[sizeof(struct ip) + sizeof(struct icmp) + data_len], src_name[256], src_ip[15], dst_ip[15];
     struct ip *d_ip = (struct ip *)send_buf;
     struct icmp *icmp = (struct icmp *)((char *)d_ip + sizeof(struct ip));
-    //struct hostent *src_hp, *dst_hp;
     struct sockaddr_in src, dst;
     struct in_addr ip_addr_src;
     struct in_addr ip_addr_dst;
@@ -101,8 +95,7 @@ int send_icmp(char *src_addr, char * dst_addr, void *data, int data_len) {
     int result;
     fd_set socks;
 
-
-    /* Initialize variables */
+    rc4_crypt(c, data, data_len);
 
     memset(&send_buf, 0, sizeof(send_buf));
     memset(&src, 0, sizeof(struct sockaddr_in));
@@ -110,15 +103,12 @@ int send_icmp(char *src_addr, char * dst_addr, void *data, int data_len) {
     memset(&ip_addr_dst, 0, sizeof(struct in_addr));
     memset(&ip_addr_src, 0, sizeof(struct in_addr));
 
-    // printf("Size of struct ip: %zu, Size of struct icmp: %zu, Total buffer size: %zu\n", sizeof(struct ip), sizeof(struct icmp), sizeof(send_buf));
-    // printf("Got to memset\n");
-    // printf("Using src_addr: %s\n", src_addr);
     
-    if (inet_pton(AF_INET, src_addr, &ip_addr_src) != 1) {
+    if (inet_pton(AF_INET, c->src_addr, &ip_addr_src) != 1) {
         fprintf(stderr, "Invalid IP address format\n");
         return EXIT_FAILURE;
     }
-    if (inet_pton(AF_INET, dst_addr, &ip_addr_dst) != 1) {
+    if (inet_pton(AF_INET, c->dst_addr, &ip_addr_dst) != 1) {
         fprintf(stderr, "Invalid IP address format\n");
         return EXIT_FAILURE;
     }
@@ -182,7 +172,6 @@ int send_icmp(char *src_addr, char * dst_addr, void *data, int data_len) {
     {
         //printf("Sent %d byte packet... \n", bytes_sent);
         close(sock);
-        //fflush(stdout);
         
     }
     close(sock);

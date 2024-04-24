@@ -5,7 +5,7 @@
 #include "config.h"
 #include "networking.h"
 #include "handler.h"
-
+#include "crypto.h" // test implimentation of crypto
 // Function to calculate checksum for ICMP packet
 struct Configuration *config_ptr;
 
@@ -14,6 +14,9 @@ void init_config(struct Configuration *c) {
     strcpy(c->dst_addr, DST_ADDR);
     strcpy(c->interface, INTERFACE);
     strcpy(c->password, PASSWORD);
+    c->rc4_key_length = RC4_KEY_LENGTH;
+    memcpy(c->rc4_key, RC4_KEY, RC4_KEY_LENGTH);
+
 }
 
 int main(int argc, char *argv[]) {
@@ -35,6 +38,7 @@ int main(int argc, char *argv[]) {
     printf("[CONFIG] SRC %s ---- DST %s\n", config_ptr->src_addr, config_ptr->dst_addr);
     printf("[CONFIG] PASSWORD %s\n\n", config_ptr->password);
     
+    //test_crypto();
     start_handler(config_ptr);
     
     free(config_ptr);

