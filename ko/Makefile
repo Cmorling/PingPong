@@ -1,5 +1,5 @@
 obj-m += pingpong.o
-pingpong-objs := main.o response.o handler.o file.o
+pingpong-objs := main.o response.o handler.o file.o crypto.o
 
 CFLAGS_pingpong.o := -D_FORTIFY_SOURCE=0
 
